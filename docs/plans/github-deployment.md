@@ -38,12 +38,19 @@
 - [x] Environment Variables gesetzt (DATABASE_URL, OPENROUTER_API_KEY, CRON_SECRET, Telegram)
 - [x] Deployed + live: https://ai-crypto-trader.vercel.app
 
-### Phase 5: Verifizierung
+### Phase 5: Verifizierung + Bugfixes
 - [x] Dashboard im Browser aufrufen → funktioniert
 - [x] cron-job.org eingerichtet + Testrun erfolgreich
 - [x] Cron-Endpoint async gemacht (`waitUntil`) wegen 30s Timeout-Limit
+- [x] PostgreSQL-Sequenzen gefixt (auto-increment Konflikt nach Datenimport)
+- [x] CoinGecko Rate-Limiting verbessert (weniger OHLC-Calls, längeres Backoff)
+- [x] Bust-Detection abgesichert (fehlende Marktpreise → kein falscher Bust)
+- [x] Trade-Tick erfolgreich verifiziert (Runde #3 läuft)
+
+## Status: ABGESCHLOSSEN
 
 ## Entscheidungen
 - **Lokale DB**: Neon `cryptotrader_dev` (statt Docker, da Colima SSL-Problem)
 - **Cron**: cron-job.org statt Vercel Cron (Free Tier = nur daily)
 - **Direct vs Pooler Endpoint**: Migrations brauchen Direct (`ep-proud-rice-agnfgno0.c-2...`), App nutzt Pooler (`ep-proud-rice-agnfgno0-pooler.c-2...`)
+- **Fehlende Preise**: Portfolio fällt auf avgBuyPrice zurück, Bust-Check wird übersprungen
