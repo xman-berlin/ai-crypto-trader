@@ -22,7 +22,7 @@ jobs:
 
       - run: npx prisma generate
 
-      - run: npx next lint ./src
+      - run: npx eslint src/
 
       - run: npm run build
         env:
