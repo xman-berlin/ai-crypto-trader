@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 interface Transaction {
   id: number;
   type: string;
@@ -31,10 +29,8 @@ export default function TransactionLog({
   total,
   onPageChange,
 }: TransactionLogProps) {
-  const [expanded, setExpanded] = useState<number | null>(null);
-
   return (
-    <div className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-6">
+    <div className="min-w-0 overflow-hidden rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-6">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Transaktionen</h2>
         {total > 0 && (
@@ -49,13 +45,12 @@ export default function TransactionLog({
             {transactions.map((tx) => (
               <div
                 key={tx.id}
-                className="rounded-md border border-[var(--card-border)] p-3 cursor-pointer"
-                onClick={() => setExpanded(expanded === tx.id ? null : tx.id)}
+                className="overflow-hidden rounded-md border border-[var(--card-border)] p-3"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <span
-                      className={`rounded px-2 py-0.5 text-xs font-bold ${
+                      className={`shrink-0 rounded px-2 py-0.5 text-xs font-bold ${
                         tx.type === "buy"
                           ? "bg-[var(--green)]/20 text-[var(--green)]"
                           : "bg-[var(--red)]/20 text-[var(--red)]"
@@ -63,28 +58,26 @@ export default function TransactionLog({
                     >
                       {tx.type.toUpperCase()}
                     </span>
-                    <span className="font-medium">{tx.coinName}</span>
+                    <span className="truncate font-medium">{tx.coinName}</span>
+                    <span className="hidden shrink-0 text-xs text-[var(--muted)] sm:inline">
+                      {tx.amount.toFixed(6)} @ €{tx.price.toFixed(2)}
+                    </span>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">€{tx.total.toFixed(2)}</p>
-                    <p className="text-xs text-[var(--muted)]">
-                      {new Date(tx.createdAt).toLocaleString("de-DE")}
-                    </p>
+                  <div className="flex shrink-0 items-center gap-3">
+                    {tx.profit !== null && (
+                      <span className={`text-sm font-medium ${tx.profit >= 0 ? "text-[var(--green)]" : "text-[var(--red)]"}`}>
+                        {tx.profit >= 0 ? "+" : ""}€{tx.profit.toFixed(2)}
+                      </span>
+                    )}
+                    <div className="text-right">
+                      <p className="font-medium">€{tx.total.toFixed(2)}</p>
+                      <p className="text-xs text-[var(--muted)]">
+                        {new Date(tx.createdAt).toLocaleString("de-DE")}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                {expanded === tx.id && (
-                  <div className="mt-3 border-t border-[var(--card-border)] pt-3 text-sm">
-                    <p>Menge: {tx.amount.toFixed(6)} @ €{tx.price.toFixed(2)}</p>
-                    <p>Gebühr: €{tx.fee.toFixed(2)}</p>
-                    {tx.profit !== null && (
-                      <p>
-                        P&L: <span className={tx.profit >= 0 ? "text-[var(--green)]" : "text-[var(--red)]"}>€{tx.profit.toFixed(2)}</span>
-                        {tx.tax > 0 && ` (KESt: €${tx.tax.toFixed(2)})`}
-                      </p>
-                    )}
-                    <p className="mt-2 text-[var(--muted)]">{tx.reasoning}</p>
-                  </div>
-                )}
+                <p className="mt-1 break-words text-xs text-[var(--muted)]">{tx.reasoning}</p>
               </div>
             ))}
           </div>

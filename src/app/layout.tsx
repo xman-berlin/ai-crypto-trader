@@ -17,7 +17,7 @@ export default function RootLayout({
         <header className="border-b border-[var(--card-border)] px-6 py-4">
           <h1 className="text-xl font-bold">AI Crypto Trader</h1>
         </header>
-        <main className="mx-auto max-w-7xl p-6">{children}</main>
+        <main className="mx-auto max-w-7xl overflow-hidden p-6">{children}</main>
       </body>
     </html>
   );

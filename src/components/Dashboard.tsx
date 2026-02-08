@@ -68,7 +68,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 gap-6">
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <PortfolioSummary portfolio={portfolio} />
