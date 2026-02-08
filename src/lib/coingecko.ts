@@ -2,7 +2,7 @@ import type { CoinMarketData, OHLCDataPoint, PriceHistoryPoint } from "@/types";
 
 const BASE_URL = "https://api.coingecko.com/api/v3";
 const CACHE_TTL = 120_000; // 2 minutes cache
-const MIN_REQUEST_INTERVAL = 2500; // 2.5s between requests (safe for free tier ~25 req/min)
+const MIN_REQUEST_INTERVAL = 4000; // 4s between requests (safe for serverless, ~15 req/min)
 
 interface CacheEntry<T> {
   data: T;
@@ -37,8 +37,8 @@ async function rateLimitedFetch(url: string): Promise<Response> {
     const res = await fetch(url);
     if (res.ok) return res;
     if (res.status === 429) {
-      // Exponential backoff: 5s, 15s, 30s
-      const delay = (attempt + 1) * 5000 + Math.random() * 2000;
+      // Exponential backoff: 10s, 25s, 45s
+      const delay = (attempt + 1) * 10000 + Math.random() * 5000;
       console.warn(`CoinGecko 429, waiting ${(delay / 1000).toFixed(1)}s...`);
       await new Promise((r) => setTimeout(r, delay));
       continue;

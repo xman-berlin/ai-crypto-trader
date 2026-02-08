@@ -86,7 +86,7 @@ export async function executeTick(): Promise<{
         ...holdings.map((h) => h.coinId),
         ...watchedCoins.slice(0, 3),
       ]),
-    ].slice(0, 5);
+    ].slice(0, 3);
 
     log("Step 4/10", `OHLC laden für ${relevantCoins.length} Coins: ${relevantCoins.join(", ")}...`);
     for (const coinId of relevantCoins) {
