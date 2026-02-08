@@ -44,6 +44,7 @@ export default function Dashboard() {
   });
 
   const isLoading = !portfolio || !market;
+  const marketArray = Array.isArray(market) ? market : [];
 
   function handleRefresh() {
     mutatePortfolio();
@@ -78,7 +79,7 @@ export default function Dashboard() {
 
       <HoldingsTable holdings={portfolio.holdings ?? []} />
 
-      <MarketTicker marketData={market ?? []} />
+      <MarketTicker marketData={marketArray} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <PnLChart snapshots={[]} startBalance={portfolio.totalValue ?? 1000} />
