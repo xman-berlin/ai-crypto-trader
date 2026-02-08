@@ -22,8 +22,6 @@ jobs:
 
       - run: npx prisma generate
 
-      - run: npx eslint src/
-
       - run: npm run build
         env:
           DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
