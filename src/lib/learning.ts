@@ -3,7 +3,8 @@ import { generateRoundAnalysis } from "./ai";
 
 export async function getLessonsFromPreviousRounds(): Promise<string[]> {
   const analyses = await prisma.analysis.findMany({
-    orderBy: { roundId: "asc" },
+    orderBy: { roundId: "desc" },
+    take: 3,
   });
 
   const lessons: string[] = [];
