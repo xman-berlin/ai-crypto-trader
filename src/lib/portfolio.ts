@@ -24,7 +24,7 @@ export async function getPortfolioState(
   const holdings: HoldingWithValue[] = round.holdings
     .filter((h) => h.amount > 0)
     .map((h) => {
-      const currentPrice = priceMap.get(h.coinId) ?? 0;
+      const currentPrice = priceMap.get(h.coinId) ?? h.avgBuyPrice;
       const value = h.amount * currentPrice;
       const costBasis = h.amount * h.avgBuyPrice;
       const pnl = value - costBasis;

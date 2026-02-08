@@ -227,8 +227,13 @@ export async function executeTick(): Promise<{
     });
     log("Step 10/10", `Snapshot: €${updatedPortfolio.totalValue.toFixed(2)}`);
 
-    // 11. Bust check
-    if (updatedPortfolio.totalValue < BUST_THRESHOLD) {
+    // 11. Bust check — only if all holdings have real market prices
+    const holdingsWithMissingPrice = updatedPortfolio.holdings.filter(
+      (h) => !marketData.some((m) => m.id === h.coinId && m.current_price > 0)
+    );
+    if (holdingsWithMissingPrice.length > 0) {
+      log("BUST-CHECK", `Übersprungen — ${holdingsWithMissingPrice.length} Coin(s) ohne Marktpreis: ${holdingsWithMissingPrice.map((h) => h.coinName).join(", ")}`);
+    } else if (updatedPortfolio.totalValue < BUST_THRESHOLD) {
       log("BUST", `Gesamtwert €${updatedPortfolio.totalValue.toFixed(2)} < €${BUST_THRESHOLD}!`);
       await prisma.round.update({
         where: { id: round.id },
