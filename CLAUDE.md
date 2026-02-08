@@ -10,7 +10,7 @@ AI-powered crypto trading simulation (German: "KI-gesteuerter Krypto-Trading-Sim
 
 - **Framework**: Next.js 15 with TypeScript (App Router)
 - **Styling**: Tailwind CSS (Dark Theme)
-- **Database**: SQLite via Prisma
+- **Database**: PostgreSQL via Prisma (Neon in production, Docker locally)
 - **AI**: OpenRouter API (free model, e.g. Kimi K2.5)
 - **Market Data**: CoinGecko Free API
 - **Charts**: Recharts
@@ -19,9 +19,10 @@ AI-powered crypto trading simulation (German: "KI-gesteuerter Krypto-Trading-Sim
 ## Build & Development Commands
 
 ```bash
-npm run dev          # Start dev server
-npx prisma db push   # Apply schema changes to SQLite
-npx prisma generate  # Regenerate Prisma client after schema changes
+npm run dev              # Start dev server
+docker compose up -d     # Start local PostgreSQL
+npx prisma migrate dev   # Apply schema changes
+npx prisma generate      # Regenerate Prisma client after schema changes
 npx ts-node prisma/seed.ts  # Seed database
 ```
 
@@ -53,7 +54,7 @@ npx ts-node prisma/seed.ts  # Seed database
 - `portfolio.ts` — Portfolio state calculations
 - `tax.ts` — Austrian KESt (27.5%) calculation
 - `learning.ts` — Round statistics, analysis generation, lessons formatting
-- `scheduler.ts` — setInterval-based trade loop
+- `scheduler.ts` — setInterval-based trade loop (local dev only)
 
 ### API Routes (`src/app/api/`)
 - `portfolio/` — GET portfolio status
@@ -61,12 +62,23 @@ npx ts-node prisma/seed.ts  # Seed database
 - `market/` — GET market data (cached)
 - `trader/run/` — POST trigger manual trade tick
 - `trader/status/` — GET scheduler status
+- `cron/trade/` — GET Vercel Cron trade tick (auth via CRON_SECRET)
 - `rounds/` — GET all rounds + analyses
+
+## Deployment
+- **Hosting**: Vercel (auto-deploy from GitHub)
+- **Database**: Neon PostgreSQL (free tier)
+- **Scheduler**: Vercel Cron (every 5 min) replaces setInterval in production
+- **Local Dev**: Docker PostgreSQL + setInterval scheduler
 
 ## Environment Variables
 
 ```
 OPENROUTER_API_KEY=   # Required for AI trading decisions
+DATABASE_URL=         # PostgreSQL connection string (Neon or local Docker)
+CRON_SECRET=          # Vercel Cron auth secret (production only)
+TELEGRAM_BOT_TOKEN=   # Optional: Telegram notifications
+TELEGRAM_CHAT_ID=     # Optional: Telegram chat ID
 ```
 
 ## Plan Management
