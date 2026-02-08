@@ -75,7 +75,7 @@ Regeln:
 - Ziel: Kapital vermehren, Totalverlust vermeiden
 - Neben den Standard-Coins sind auch aktuell trendende Coins handelbar (mit "🔥 TRENDING" markiert). Diese können kurzfristige Chancen bieten, aber auch volatiler sein.
 
-${lessons.length > 0 ? `\nLessons aus vergangenen Runden:\n${lessons.map((l, i) => `${i + 1}. ${l}`).join("\n")}` : ""}
+${lessons.length > 0 ? `\nLessons aus vergangenen Runden (neueste zuerst — bei Widersprüchen gilt die jüngste Erkenntnis):\n${lessons.map((l, i) => `${i + 1}. ${l}`).join("\n")}` : ""}
 
 Antworte AUSSCHLIESSLICH mit validem JSON in diesem Format:
 {
