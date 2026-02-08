@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Round {
+  id           Int           @id @default(autoincrement())
+  startBalance Float         @default(1000)
+  status       String        @default("active") // active | busted
+  createdAt    DateTime      @default(now())
+  endedAt      DateTime?
+  holdings     Holding[]
+  transactions Transaction[]
+  snapshots    Snapshot[]
+  analysis     Analysis?
+}
+
+model Holding {
+  id          Int    @id @default(autoincrement())
+  roundId     Int
+  coinId      String // e.g. "bitcoin"
+  coinName    String // e.g. "Bitcoin"
+  amount      Float
+  avgBuyPrice Float
+  round       Round  @relation(fields: [roundId], references: [id])
+
+  @@unique([roundId, coinId])
+}
+
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  roundId   Int
+  type      String   // buy | sell
+  coinId    String
+  coinName  String
+  amount    Float
+  price     Float    // price per unit at time of trade
+  total     Float    // amount * price
+  fee       Float    @default(1) // €1 flat fee
+  tax       Float    @default(0) // KESt on profit
+  profit    Float?   // only for sell
+  reasoning String   // AI reasoning for this trade
+  createdAt DateTime @default(now())
+  round     Round    @relation(fields: [roundId], references: [id])
+}
+
+model Snapshot {
+  id         Int      @id @default(autoincrement())
+  roundId    Int
+  totalValue Float    // cash + holdings value
+  cash       Float
+  createdAt  DateTime @default(now())
+  round      Round    @relation(fields: [roundId], references: [id])
+}
+
+model Analysis {
+  id         Int      @id @default(autoincrement())
+  roundId    Int      @unique
+  summary    String
+  lessons    String   // JSON array of lesson strings
+  mistakes   String   // JSON array of mistake strings
+  strategies String   // JSON array of strategy strings
+  createdAt  DateTime @default(now())
+  round      Round    @relation(fields: [roundId], references: [id])
+}
+
+model Config {
+  key   String @id
+  value String
+}
