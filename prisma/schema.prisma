@@ -16,7 +16,7 @@ model Round {
   holdings     Holding[]
   transactions Transaction[]
   snapshots    Snapshot[]
-  analysis     Analysis?
+  analyses     Analysis[]
 }
 
 model Holding {
@@ -59,7 +59,8 @@ model Snapshot {
 
 model Analysis {
   id         Int      @id @default(autoincrement())
-  roundId    Int      @unique
+  roundId    Int
+  type       String   @default("bust") // "bust" | "periodic" | "final"
   summary    String
   lessons    String   // JSON array of lesson strings
   mistakes   String   // JSON array of mistake strings

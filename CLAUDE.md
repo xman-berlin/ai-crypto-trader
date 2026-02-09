@@ -8,22 +8,22 @@ AI-powered crypto trading simulation (German: "KI-gesteuerter Krypto-Trading-Sim
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 with TypeScript (App Router)
-- **Styling**: Tailwind CSS (Dark Theme)
-- **Database**: PostgreSQL via Prisma (Neon in production, Docker locally)
-- **AI**: OpenRouter API (free model, e.g. Kimi K2.5)
-- **Market Data**: CoinGecko Free API
+- **Framework**: Next.js 16 with TypeScript (App Router)
+- **Styling**: Tailwind CSS v4 (Dark Theme)
+- **Database**: PostgreSQL via Prisma 6 (Neon — both dev and prod, separate databases)
+- **AI**: OpenRouter API (DeepSeek V3.1 primary, Qwen fallback)
+- **Market Data**: CoinGecko Free API (primary), CoinPaprika Free API (fallback)
 - **Charts**: Recharts
 - **Data Fetching**: SWR (client-side polling)
 
 ## Build & Development Commands
 
 ```bash
-npm run dev              # Start dev server
-docker compose up -d     # Start local PostgreSQL
+npm run dev              # Start dev server (uses Neon dev DB)
 npx prisma migrate dev   # Apply schema changes
 npx prisma generate      # Regenerate Prisma client after schema changes
 npx ts-node prisma/seed.ts  # Seed database
+npm run build            # Production build
 ```
 
 ## Architecture
@@ -38,23 +38,28 @@ npx ts-node prisma/seed.ts  # Seed database
 7. Call AI via OpenRouter with all data → parse JSON response
 8. Validate & execute trades → DB updates
 9. Save portfolio snapshot (for charts)
-10. Bust check: if total value < €2 → end round → generate analysis → start new round
+10. Periodic 24h analysis check → generate if due
+11. Bust check: if total value < €2 → end round → generate analysis → start new round
+12. Doubling check: if total value >= 2x start → end round as "completed"
+13. Time limit check: if round > 72h → end round as "expired"
 
 ### Key Design Decisions
 - **Cash balance is computed, not stored**: `startBalance + sells - buys - fees - taxes`
-- **Lessons injection**: All past round analyses are injected into the AI system prompt each tick
+- **Lessons injection**: Last 3 analyses injected with weight tags ([AKTUELL], [VORHERIG], [ÄLTER])
+- **24h analysis cycle**: Periodic analyses created every 24h during active rounds
+- **Round limits**: 72h max duration, doubling target (€1,000 → €2,000), min trade €50
 - **Tax calculation**: Only on sell with profit: `(sellPrice - avgBuyPrice) * amount * 0.275`
 
 ### Core Library Modules (`src/lib/`)
-- `trader.ts` — Tick orchestration, buy/sell execution, bust detection (central entry point)
+- `trader.ts` — Tick orchestration, buy/sell execution, bust/doubling/time-limit detection (central entry point)
 - `ai.ts` — OpenRouter client for trading decisions and round analysis
 - `coingecko.ts` — Market data with 60s cache and rate limiting
 - `indicators.ts` — Technical indicators computed from OHLC data
 - `sentiment.ts` — Fear & Greed Index, trending coins, news RSS
 - `portfolio.ts` — Portfolio state calculations
 - `tax.ts` — Austrian KESt (27.5%) calculation
-- `learning.ts` — Round statistics, analysis generation, lessons formatting
-- `scheduler.ts` — setInterval-based trade loop (local dev only)
+- `learning.ts` — Round analysis generation (bust/periodic/final), weighted lessons, 24h cycle check
+- `scheduler.ts` — setInterval-based trade loop (dev server only)
 
 ### API Routes (`src/app/api/`)
 - `portfolio/` — GET portfolio status
@@ -66,25 +71,33 @@ npx ts-node prisma/seed.ts  # Seed database
 - `rounds/` — GET all rounds + analyses
 
 ## Deployment
+
+### Production
 - **Hosting**: Vercel (auto-deploy from GitHub)
-- **Database**: Neon PostgreSQL (free tier)
-- **Scheduler**: Vercel Cron (every 5 min) replaces setInterval in production
-- **Local Dev**: Docker PostgreSQL + setInterval scheduler
+- **Database**: Neon PostgreSQL (prod database)
+- **Scheduler**: Vercel Cron (every 5 min)
+
+### Local Development
+- **Database**: Neon PostgreSQL (dev database `cryptotrader_dev` — no Docker needed)
+- **Scheduler**: setInterval via dev server
 
 ## Environment Variables
 
 ```
 OPENROUTER_API_KEY=   # Required for AI trading decisions
-DATABASE_URL=         # PostgreSQL connection string (Neon or local Docker)
+DATABASE_URL=         # PostgreSQL connection string (Neon — dev and prod use separate databases)
 CRON_SECRET=          # Vercel Cron auth secret (production only)
 TELEGRAM_BOT_TOKEN=   # Optional: Telegram notifications
 TELEGRAM_CHAT_ID=     # Optional: Telegram chat ID
 ```
 
 ## Plan Management
-- The detailed project plan with progress tracking lives in `ai-crypto-trader.md`
+- The detailed project plans with progress tracking live in `docs/plans/`
 - Plans are stored in `docs/plans/` — update existing plan files, don't create new ones
 - Progress is tracked with `- [ ]` / `- [x]` checkboxes
+
+## Documentation
+- After significant changes (new features, architecture changes, tech stack updates), always update this CLAUDE.md to reflect the current state
 
 ## Git
 - Commits and push only on explicit user command — never commit or push autonomously

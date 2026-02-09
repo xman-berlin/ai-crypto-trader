@@ -13,13 +13,11 @@ const openai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY || "",
 });
 
-// Auto-routing meta-model first, then specific free models as fallback
+// DeepSeek V3 as primary model (best crypto trading performance), with fallbacks
 const FREE_MODELS = [
+  "deepseek/deepseek-chat-v3.1",
+  "qwen/qwen3-30b-a3b-04-28",
   "openrouter/free",
-  "deepseek/deepseek-r1-0528:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "google/gemma-3-27b-it:free",
-  "mistralai/mistral-small-3.1-24b-instruct:free",
 ];
 
 async function callAI(systemPrompt: string, userPrompt: string): Promise<string> {
@@ -34,7 +32,7 @@ async function callAI(systemPrompt: string, userPrompt: string): Promise<string>
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.7,
+        temperature: 0.4,
         max_tokens: 2000,
       });
 
@@ -64,18 +62,26 @@ export async function getTradeDecisions(
   sentiment: SentimentData,
   portfolio: PortfolioState,
   lessons: string[],
-  trendingCoinIds: string[] = []
+  trendingCoinIds: string[] = [],
+  roundCreatedAt: Date = new Date()
 ): Promise<AIResponse> {
+  const roundAgeHours = (Date.now() - roundCreatedAt.getTime()) / (1000 * 60 * 60);
+  const remainingHours = Math.max(0, 72 - roundAgeHours);
+
   const systemPrompt = `Du bist ein erfahrener Krypto-Trader. Du verwaltest ein Spieldepot (Simulation).
 Regeln:
 - Startkapital: €1.000 pro Runde
 - Transaktionsgebühr: €1 pro Trade
 - 27,5% KESt auf realisierte Gewinne
-- Minimaler Trade: €5
-- Ziel: Kapital vermehren, Totalverlust vermeiden
+- Minimaler Trade: €50
+- Ziel: Kapital innerhalb von 3 Tagen verdoppeln (€1.000 → €2.000)
 - Neben den Standard-Coins sind auch aktuell trendende Coins handelbar (mit "🔥 TRENDING" markiert). Diese können kurzfristige Chancen bieten, aber auch volatiler sein.
 
-${lessons.length > 0 ? `\nLessons aus vergangenen Runden (neueste zuerst — bei Widersprüchen gilt die jüngste Erkenntnis):\n${lessons.map((l, i) => `${i + 1}. ${l}`).join("\n")}` : ""}
+${lessons.length > 0 ? `\nLessons aus vergangenen Analysen (gewichtet):
+- [AKTUELL] = höchste Priorität, unbedingt befolgen
+- [VORHERIG] = wichtig, aber [AKTUELL] überschreibt bei Widersprüchen
+- [ÄLTER] = Hintergrundwissen, nur relevant wenn nicht widersprochen
+${lessons.map((l, i) => `${i + 1}. ${l}`).join("\n")}` : ""}
 
 Antworte AUSSCHLIESSLICH mit validem JSON in diesem Format:
 {
@@ -91,7 +97,10 @@ Bei "hold": amount = 0
 
 Du kannst mehrere Entscheidungen treffen oder nur "hold" zurückgeben.`;
 
-  const userPrompt = `## Portfolio
+  const userPrompt = `## Runde
+Laufzeit: ${roundAgeHours.toFixed(1)}h von 72h (${remainingHours.toFixed(1)}h verbleibend)
+
+## Portfolio
 Cash: €${portfolio.cash.toFixed(2)}
 Gesamtwert: €${portfolio.totalValue.toFixed(2)}
 P&L: €${portfolio.pnl.toFixed(2)} (${portfolio.pnlPercent.toFixed(1)}%)

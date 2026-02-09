@@ -1,4 +1,5 @@
 import type { CoinMarketData, OHLCDataPoint, PriceHistoryPoint } from "@/types";
+import { getMarketDataFallback, getOHLCFallback } from "./coinpaprika";
 
 const BASE_URL = "https://api.coingecko.com/api/v3";
 const CACHE_TTL = 120_000; // 2 minutes cache
@@ -58,8 +59,29 @@ export async function getMarketData(
 
   const ids = coinIds.join(",");
   const url = `${BASE_URL}/coins/markets?vs_currency=${currency}&ids=${ids}&order=market_cap_desc&sparkline=false`;
+  console.log(`[CoinGecko] Marktdaten anfragen für ${coinIds.length} Coins: ${coinIds.join(", ")}`);
   const res = await rateLimitedFetch(url);
-  const data = await res.json();
+  const data: CoinMarketData[] = await res.json();
+
+  // Check which requested coins are missing or have no price
+  const returnedIds = new Set(
+    data.filter((d) => d.current_price && d.current_price > 0).map((d) => d.id)
+  );
+  const receivedCoins = data.map((d) => `${d.id}=€${d.current_price ?? 0}`);
+  console.log(`[CoinGecko] Response: ${returnedIds.size}/${coinIds.length} Coins mit Preis — ${receivedCoins.join(", ")}`);
+
+  const missingIds = coinIds.filter((id) => !returnedIds.has(id));
+
+  if (missingIds.length > 0) {
+    console.log(`[CoinGecko] Fehlend: ${missingIds.join(", ")} → CoinPaprika Fallback`);
+    const fallbackData = await getMarketDataFallback(missingIds);
+    if (fallbackData.length > 0) {
+      data.push(...fallbackData);
+    } else {
+      console.log(`[CoinPaprika] Kein Fallback-Ergebnis für: ${missingIds.join(", ")}`);
+    }
+  }
+
   setCache(cacheKey, data);
   return data;
 }
@@ -73,20 +95,34 @@ export async function getOHLC(
   const cached = getCached<OHLCDataPoint[]>(cacheKey);
   if (cached) return cached;
 
-  const url = `${BASE_URL}/coins/${coinId}/ohlc?vs_currency=${currency}&days=${days}`;
-  const res = await rateLimitedFetch(url);
-  const raw: number[][] = await res.json();
+  try {
+    console.log(`[CoinGecko] OHLC anfragen für ${coinId} (${days} Tage)`);
+    const url = `${BASE_URL}/coins/${coinId}/ohlc?vs_currency=${currency}&days=${days}`;
+    const res = await rateLimitedFetch(url);
+    const raw: number[][] = await res.json();
 
-  const data: OHLCDataPoint[] = raw.map(([timestamp, open, high, low, close]) => ({
-    timestamp,
-    open,
-    high,
-    low,
-    close,
-  }));
+    const data: OHLCDataPoint[] = raw.map(([timestamp, open, high, low, close]) => ({
+      timestamp,
+      open,
+      high,
+      low,
+      close,
+    }));
 
-  setCache(cacheKey, data);
-  return data;
+    console.log(`[CoinGecko] OHLC Response für ${coinId}: ${data.length} Datenpunkte`);
+    setCache(cacheKey, data);
+    return data;
+  } catch (err) {
+    console.warn(`[CoinGecko] OHLC fehlgeschlagen für ${coinId}: ${(err as Error).message} → CoinPaprika Fallback`);
+    const fallbackData = await getOHLCFallback(coinId);
+    if (fallbackData.length > 0) {
+      console.log(`[CoinPaprika] OHLC Fallback für ${coinId}: ${fallbackData.length} Datenpunkte`);
+      setCache(cacheKey, fallbackData);
+    } else {
+      console.log(`[CoinPaprika] OHLC Fallback für ${coinId}: keine Daten`);
+    }
+    return fallbackData;
+  }
 }
 
 export async function getPriceHistory(

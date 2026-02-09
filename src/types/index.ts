@@ -112,13 +112,22 @@ export interface TraderStatus {
   interval: number;
 }
 
+export interface AnalysisEntry {
+  type: string;
+  summary: string;
+  lessons: string[];
+  mistakes: string[];
+  strategies: string[];
+  createdAt: string;
+}
+
 export interface RoundWithAnalysis {
   id: number;
   startBalance: number;
   status: string;
   createdAt: string;
   endedAt: string | null;
-  analysis: RoundAnalysis | null;
+  analyses: AnalysisEntry[];
   transactionCount: number;
   finalValue: number | null;
 }

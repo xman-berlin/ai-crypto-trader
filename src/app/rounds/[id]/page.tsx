@@ -2,6 +2,30 @@ import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
+function analysisTypeBadge(type: string) {
+  switch (type) {
+    case "periodic":
+      return { label: "24h-Analyse", className: "bg-[var(--accent)]/20 text-[var(--accent)]" };
+    case "final":
+      return { label: "Finale Analyse", className: "bg-[var(--green)]/20 text-[var(--green)]" };
+    default:
+      return { label: "Bust-Analyse", className: "bg-[var(--red)]/20 text-[var(--red)]" };
+  }
+}
+
+function roundStatusBadge(status: string) {
+  switch (status) {
+    case "active":
+      return { label: "Aktiv", className: "bg-[var(--green)]/20 text-[var(--green)]" };
+    case "completed":
+      return { label: "Completed", className: "bg-[var(--green)]/20 text-[var(--green)]" };
+    case "expired":
+      return { label: "Expired", className: "bg-yellow-500/20 text-yellow-500" };
+    default:
+      return { label: "Bust", className: "bg-[var(--red)]/20 text-[var(--red)]" };
+  }
+}
+
 export default async function RoundDetailPage({
   params,
 }: {
@@ -14,7 +38,7 @@ export default async function RoundDetailPage({
   const round = await prisma.round.findUnique({
     where: { id: roundId },
     include: {
-      analysis: true,
+      analyses: { orderBy: { createdAt: "desc" } },
       transactions: { orderBy: { createdAt: "asc" } },
       snapshots: { orderBy: { createdAt: "asc" } },
     },
@@ -26,14 +50,16 @@ export default async function RoundDetailPage({
   const finalValue = lastSnapshot?.totalValue ?? round.startBalance;
   const pnl = finalValue - round.startBalance;
 
-  const analysis = round.analysis
-    ? {
-        summary: round.analysis.summary,
-        lessons: JSON.parse(round.analysis.lessons) as string[],
-        mistakes: JSON.parse(round.analysis.mistakes) as string[],
-        strategies: JSON.parse(round.analysis.strategies) as string[],
-      }
-    : null;
+  const analyses = round.analyses.map((a) => ({
+    type: a.type,
+    summary: a.summary,
+    lessons: JSON.parse(a.lessons) as string[],
+    mistakes: JSON.parse(a.mistakes) as string[],
+    strategies: JSON.parse(a.strategies) as string[],
+    createdAt: a.createdAt,
+  }));
+
+  const badge = roundStatusBadge(round.status);
 
   return (
     <div className="grid gap-6">
@@ -48,13 +74,9 @@ export default async function RoundDetailPage({
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Runde #{round.id}</h1>
           <span
-            className={`rounded px-3 py-1 text-sm font-bold ${
-              round.status === "active"
-                ? "bg-[var(--green)]/20 text-[var(--green)]"
-                : "bg-[var(--red)]/20 text-[var(--red)]"
-            }`}
+            className={`rounded px-3 py-1 text-sm font-bold ${badge.className}`}
           >
-            {round.status === "active" ? "Aktiv" : "Bust"}
+            {badge.label}
           </span>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -83,43 +105,58 @@ export default async function RoundDetailPage({
         </div>
       </div>
 
-      {analysis && (
-        <div className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-6">
-          <h2 className="mb-4 text-lg font-semibold">Analyse</h2>
-          <p className="mb-4">{analysis.summary}</p>
+      {analyses.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Analysen ({analyses.length})</h2>
+          {analyses.map((a, idx) => {
+            const typeBadge = analysisTypeBadge(a.type);
+            return (
+              <div key={idx} className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`rounded px-2 py-0.5 text-xs font-bold ${typeBadge.className}`}>
+                    {typeBadge.label}
+                  </span>
+                  <span className="text-sm text-[var(--muted)]">
+                    {a.createdAt.toLocaleString("de-DE")}
+                  </span>
+                </div>
+                <p className="mb-4">{a.summary}</p>
 
-          {analysis.lessons.length > 0 && (
-            <div className="mb-4">
-              <h3 className="mb-2 font-medium text-[var(--green)]">Lessons</h3>
-              <ul className="list-inside list-disc space-y-1 text-sm">
-                {analysis.lessons.map((l, i) => (
-                  <li key={i}>{l}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+                {a.lessons.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="mb-2 font-medium text-[var(--green)]">Lessons</h3>
+                    <ul className="list-inside list-disc space-y-1 text-sm">
+                      {a.lessons.map((l, i) => (
+                        <li key={i}>{l}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-          {analysis.mistakes.length > 0 && (
-            <div className="mb-4">
-              <h3 className="mb-2 font-medium text-[var(--red)]">Fehler</h3>
-              <ul className="list-inside list-disc space-y-1 text-sm">
-                {analysis.mistakes.map((m, i) => (
-                  <li key={i}>{m}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+                {a.mistakes.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="mb-2 font-medium text-[var(--red)]">Fehler</h3>
+                    <ul className="list-inside list-disc space-y-1 text-sm">
+                      {a.mistakes.map((m, i) => (
+                        <li key={i}>{m}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-          {analysis.strategies.length > 0 && (
-            <div>
-              <h3 className="mb-2 font-medium text-[var(--accent)]">Strategien</h3>
-              <ul className="list-inside list-disc space-y-1 text-sm">
-                {analysis.strategies.map((s, i) => (
-                  <li key={i}>{s}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+                {a.strategies.length > 0 && (
+                  <div>
+                    <h3 className="mb-2 font-medium text-[var(--accent)]">Strategien</h3>
+                    <ul className="list-inside list-disc space-y-1 text-sm">
+                      {a.strategies.map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

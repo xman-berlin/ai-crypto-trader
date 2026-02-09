@@ -5,12 +5,13 @@ import { getSentimentData } from "./sentiment";
 import { getPortfolioState, getActiveRound } from "./portfolio";
 import { getTradeDecisions } from "./ai";
 import { calculateKESt, getTransactionFee } from "./tax";
-import { getLessonsFromPreviousRounds, createRoundAnalysis } from "./learning";
+import { getLessonsFromPreviousRounds, createRoundAnalysis, shouldRunPeriodicAnalysis, createPeriodicAnalysis } from "./learning";
 import { sendTradeNotification } from "./telegram";
 import type { TechnicalIndicators } from "@/types";
 
-const MIN_TRADE_EUR = 5;
+const MIN_TRADE_EUR = 50;
 const BUST_THRESHOLD = 2; // €2
+const MAX_ROUND_HOURS = 72; // 3 Tage
 
 function log(step: string, detail?: string) {
   const ts = new Date().toLocaleTimeString("de-DE");
@@ -123,7 +124,8 @@ export async function executeTick(): Promise<{
       sentiment,
       portfolio,
       lessons,
-      trendingCoinIds
+      trendingCoinIds,
+      round.createdAt
     );
     log("Step 8/10", `KI antwortete in ${((Date.now() - aiStart) / 1000).toFixed(1)}s — ${aiResponse.decisions.length} Entscheidung(en)`);
     log("Step 8/10", `Analyse: ${aiResponse.marketAnalysis}`);
@@ -149,10 +151,40 @@ export async function executeTick(): Promise<{
         continue;
       }
 
-      const coinPrice =
-        marketData.find((c) => c.id === decision.coinId)?.current_price;
+      // Match by id first, then by symbol (AI sometimes returns symbols like "btc" instead of "bitcoin")
+      let coinMatch = marketData.find((c) => c.id === decision.coinId)
+        || marketData.find((c) => c.symbol === decision.coinId.toLowerCase());
+      if (coinMatch && coinMatch.id !== decision.coinId) {
+        log("Step 9/10", `  FIX coinId: "${decision.coinId}" → "${coinMatch.id}" (matched by symbol)`);
+        decision.coinId = coinMatch.id;
+        decision.coinName = coinMatch.name;
+      }
+
+      // On-demand fetch if coin not in marketData (AI decided on a coin we didn't request)
+      if (!coinMatch || !coinMatch.current_price) {
+        log("Step 9/10", `  ${decision.coinId} nicht in Marktdaten — lade on-demand nach...`);
+        try {
+          const onDemand = await getMarketData([decision.coinId]);
+          const fetched = onDemand.find((c) => c.id === decision.coinId)
+            || onDemand.find((c) => c.symbol === decision.coinId.toLowerCase());
+          if (fetched && fetched.current_price > 0) {
+            if (fetched.id !== decision.coinId) {
+              log("Step 9/10", `  FIX coinId: "${decision.coinId}" → "${fetched.id}" (on-demand match)`);
+              decision.coinId = fetched.id;
+              decision.coinName = fetched.name;
+            }
+            marketData.push(fetched);
+            coinMatch = fetched;
+            log("Step 9/10", `  ✓ On-demand geladen: ${fetched.name} (${fetched.symbol}) = €${fetched.current_price}`);
+          }
+        } catch (e) {
+          log("Step 9/10", `  ✗ On-demand Fehler für ${decision.coinId}: ${(e as Error).message}`);
+        }
+      }
+
+      const coinPrice = coinMatch?.current_price;
       if (!coinPrice) {
-        log("Step 9/10", `  SKIP ${decision.coinId} — kein Preis gefunden`);
+        log("Step 9/10", `  SKIP ${decision.coinId} — kein Preis gefunden (weder CoinGecko noch CoinPaprika)`);
         actions.push(`skip: ${decision.coinId} - kein Preis gefunden`);
         continue;
       }
@@ -227,6 +259,18 @@ export async function executeTick(): Promise<{
     });
     log("Step 10/10", `Snapshot: €${updatedPortfolio.totalValue.toFixed(2)}`);
 
+    // 10b. Periodische 24h-Analyse prüfen
+    try {
+      if (await shouldRunPeriodicAnalysis(round.id)) {
+        log("ANALYSE", "24h-Analyse fällig, erstelle...");
+        await createPeriodicAnalysis(round.id);
+        log("ANALYSE", "24h-Analyse erstellt");
+        actions.push("24h-Analyse erstellt");
+      }
+    } catch (e) {
+      log("ANALYSE", `24h-Analyse Fehler: ${(e as Error).message}`);
+    }
+
     // 11. Bust check — only if all holdings have real market prices
     const holdingsWithMissingPrice = updatedPortfolio.holdings.filter(
       (h) => !marketData.some((m) => m.id === h.coinId && m.current_price > 0)
@@ -257,6 +301,44 @@ export async function executeTick(): Promise<{
       });
       actions.push(`Neue Runde #${newRound.id} gestartet`);
       log("BUST", `Neue Runde #${newRound.id} gestartet`);
+    } else if (updatedPortfolio.totalValue >= round.startBalance * 2) {
+      // 12. Verdopplung erreicht!
+      log("VERDOPPLUNG", `Ziel erreicht! €${updatedPortfolio.totalValue.toFixed(2)} >= €${(round.startBalance * 2).toFixed(2)}`);
+      await prisma.round.update({
+        where: { id: round.id },
+        data: { status: "completed", endedAt: new Date() },
+      });
+      actions.push(`VERDOPPLUNG! Gesamtwert: €${updatedPortfolio.totalValue.toFixed(2)}`);
+      try {
+        await createRoundAnalysis(round.id, "final");
+        actions.push("Finale Analyse erstellt");
+      } catch (e) {
+        log("VERDOPPLUNG", `Analyse-Fehler: ${(e as Error).message}`);
+      }
+      const newRound = await prisma.round.create({ data: { startBalance: 1000 } });
+      actions.push(`Neue Runde #${newRound.id} gestartet`);
+      log("VERDOPPLUNG", `Neue Runde #${newRound.id} gestartet`);
+    } else {
+      // 13. Rundenlimit prüfen (3 Tage)
+      const roundAgeMs = Date.now() - round.createdAt.getTime();
+      const roundAgeHours = roundAgeMs / (1000 * 60 * 60);
+      if (roundAgeHours >= MAX_ROUND_HOURS) {
+        log("ZEITLIMIT", `Runde #${round.id} nach ${roundAgeHours.toFixed(0)}h abgelaufen`);
+        await prisma.round.update({
+          where: { id: round.id },
+          data: { status: "expired", endedAt: new Date() },
+        });
+        actions.push(`ZEITLIMIT! Runde nach ${roundAgeHours.toFixed(0)}h abgelaufen`);
+        try {
+          await createRoundAnalysis(round.id, "final");
+          actions.push("Finale Analyse erstellt");
+        } catch (e) {
+          log("ZEITLIMIT", `Analyse-Fehler: ${(e as Error).message}`);
+        }
+        const newRound = await prisma.round.create({ data: { startBalance: 1000 } });
+        actions.push(`Neue Runde #${newRound.id} gestartet`);
+        log("ZEITLIMIT", `Neue Runde #${newRound.id} gestartet`);
+      }
     }
 
     const elapsed = ((Date.now() - tickStart) / 1000).toFixed(1);

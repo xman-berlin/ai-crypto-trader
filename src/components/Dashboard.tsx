@@ -94,7 +94,7 @@ export default function Dashboard() {
         onPageChange={setTxPage}
       />
 
-      <RoundInfo rounds={rounds ?? []} />
+      <RoundInfo rounds={Array.isArray(rounds) ? rounds : []} />
     </div>
   );
 }

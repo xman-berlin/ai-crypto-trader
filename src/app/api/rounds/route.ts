@@ -6,7 +6,7 @@ export async function GET() {
     const rounds = await prisma.round.findMany({
       orderBy: { id: "desc" },
       include: {
-        analysis: true,
+        analyses: { orderBy: { createdAt: "desc" } },
         _count: { select: { transactions: true } },
         snapshots: { orderBy: { createdAt: "desc" }, take: 1 },
       },
@@ -18,14 +18,14 @@ export async function GET() {
       status: r.status,
       createdAt: r.createdAt.toISOString(),
       endedAt: r.endedAt?.toISOString() ?? null,
-      analysis: r.analysis
-        ? {
-            summary: r.analysis.summary,
-            lessons: JSON.parse(r.analysis.lessons),
-            mistakes: JSON.parse(r.analysis.mistakes),
-            strategies: JSON.parse(r.analysis.strategies),
-          }
-        : null,
+      analyses: r.analyses.map((a) => ({
+        type: a.type,
+        summary: a.summary,
+        lessons: JSON.parse(a.lessons),
+        mistakes: JSON.parse(a.mistakes),
+        strategies: JSON.parse(a.strategies),
+        createdAt: a.createdAt.toISOString(),
+      })),
       transactionCount: r._count.transactions,
       finalValue: r.snapshots[0]?.totalValue ?? null,
     }));
