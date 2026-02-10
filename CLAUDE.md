@@ -47,13 +47,16 @@ npm run build            # Production build
 - **Cash balance is computed, not stored**: `startBalance + sells - buys - fees - taxes`
 - **Lessons injection**: Last 3 analyses injected with weight tags ([AKTUELL], [VORHERIG], [ÄLTER])
 - **24h analysis cycle**: Periodic analyses created every 24h during active rounds
-- **Round limits**: 72h max duration, doubling target (€1,000 → €2,000), min trade €50
+- **Round limits**: 72h max duration, doubling target (€1,000 → €2,000), min trade €50 (buy only; sells allowed below €50 if full position value < €50)
 - **Tax calculation**: Only on sell with profit: `(sellPrice - avgBuyPrice) * amount * 0.275`
+- **CoinID resolution**: AI may return symbols instead of CoinGecko IDs; trader matches by symbol and fetches on-demand if coin not in market data
+- **24h analysis**: Uses portfolio value from 24h ago as baseline, separate prompt (interim, not round-end)
 
 ### Core Library Modules (`src/lib/`)
 - `trader.ts` — Tick orchestration, buy/sell execution, bust/doubling/time-limit detection (central entry point)
 - `ai.ts` — OpenRouter client for trading decisions and round analysis
-- `coingecko.ts` — Market data with 60s cache and rate limiting
+- `coingecko.ts` — Market data with 2min cache and rate limiting, CoinPaprika fallback for missing coins
+- `coinpaprika.ts` — Fallback market data source (20k calls/month, no API key), ID mapping CoinGecko→CoinPaprika
 - `indicators.ts` — Technical indicators computed from OHLC data
 - `sentiment.ts` — Fear & Greed Index, trending coins, news RSS
 - `portfolio.ts` — Portfolio state calculations
@@ -62,11 +65,11 @@ npm run build            # Production build
 - `scheduler.ts` — setInterval-based trade loop (dev server only)
 
 ### API Routes (`src/app/api/`)
-- `portfolio/` — GET portfolio status
+- `portfolio/` — GET portfolio status + snapshots (for PnL chart)
 - `transactions/` — GET transaction history
 - `market/` — GET market data (cached)
 - `trader/run/` — POST trigger manual trade tick
-- `trader/status/` — GET scheduler status
+- `trader/status/` — GET scheduler status (last tick from DB snapshots)
 - `cron/trade/` — GET Vercel Cron trade tick (auth via CRON_SECRET)
 - `rounds/` — GET all rounds + analyses
 

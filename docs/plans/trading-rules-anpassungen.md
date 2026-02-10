@@ -13,6 +13,11 @@ Der AI Crypto Trader soll verbessert werden: besseres KI-Modell, höherer Mindes
 - [x] 7. UI: Alle Analysen pro Runde anzeigen
 - [x] 8. System-Prompt aktualisieren
 - [x] 9. Build + Test
+- [x] 10. CoinPaprika als Fallback-Datenquelle
+- [x] 11. CoinID-Resolution (Symbol-Matching + On-Demand-Fetch)
+- [x] 12. Sell-Minimum: kleine Positionen < €50 immer liquidierbar
+- [x] 13. 24h-Analyse: eigener Prompt (Zwischenbericht, nicht Rundenende)
+- [x] 14. UI: Accordion, PnL-Chart, kompakter KI-Trader, Runden-Paginierung
 
 ---
 
