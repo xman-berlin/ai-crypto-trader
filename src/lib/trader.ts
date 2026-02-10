@@ -461,9 +461,10 @@ async function executeSell(
   const sellAmount = Math.min(coinAmount, holding.amount);
   const total = sellAmount * price;
 
-  // Sell-Minimum nur prüfen wenn es kein Komplett-Verkauf ist (alte Kleinstpositionen sollen immer liquidierbar sein)
-  if (total < MIN_TRADE_EUR && sellAmount < holding.amount) {
-    log("SELL", `SKIP ${coinName}: €${total.toFixed(2)} unter Minimum (Teilverkauf)`);
+  // Sell-Minimum nur prüfen wenn die Gesamtposition genug wert ist für einen Teilverkauf über dem Minimum
+  const fullPositionValue = holding.amount * price;
+  if (total < MIN_TRADE_EUR && fullPositionValue >= MIN_TRADE_EUR) {
+    log("SELL", `SKIP ${coinName}: €${total.toFixed(2)} unter Minimum (Teilverkauf, Position €${fullPositionValue.toFixed(2)})`);
     actions.push(`skip sell ${coinName}: unter Minimum (Teilverkauf)`);
     return null;
   }

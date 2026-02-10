@@ -10,7 +10,7 @@ export default function PortfolioSummary({
   const pnlColor = portfolio.pnl >= 0 ? "text-[var(--green)]" : "text-[var(--red)]";
 
   return (
-    <div className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-6">
+    <div className="h-full rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-6">
       <h2 className="mb-4 text-lg font-semibold">Portfolio (Runde #{portfolio.roundId})</h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div>

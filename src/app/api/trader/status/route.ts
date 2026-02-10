@@ -1,20 +1,29 @@
 import { NextResponse } from "next/server";
 import { getSchedulerStatus, startScheduler, stopScheduler } from "@/lib/scheduler";
+import { prisma } from "@/lib/db";
 
 const isVercel = !!process.env.VERCEL;
 
 export async function GET() {
+  // Last tick always from DB (reliable across scheduler, manual ticks, and Vercel cron)
+  const lastSnapshot = await prisma.snapshot.findFirst({
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+  const lastTick = lastSnapshot?.createdAt.toISOString() ?? null;
+
   if (isVercel) {
-    // On Vercel, cron handles scheduling — return cron-based status
     return NextResponse.json({
       isRunning: true,
-      lastTick: null,
+      lastTick,
       nextTick: null,
       interval: 300_000,
       mode: "vercel-cron",
     });
   }
-  return NextResponse.json(getSchedulerStatus());
+
+  const schedulerStatus = getSchedulerStatus();
+  return NextResponse.json({ ...schedulerStatus, lastTick });
 }
 
 export async function POST(request: Request) {

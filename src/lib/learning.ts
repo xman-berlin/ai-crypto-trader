@@ -50,6 +50,13 @@ export async function createPeriodicAnalysis(roundId: number): Promise<void> {
   const lastSnapshot = round.snapshots[round.snapshots.length - 1];
   const finalValue = lastSnapshot?.totalValue ?? round.startBalance;
 
+  // Portfoliowert vor 24h als Startpunkt (Snapshot direkt vor dem Zeitfenster)
+  const snapshotBefore = await prisma.snapshot.findFirst({
+    where: { roundId, createdAt: { lt: since } },
+    orderBy: { createdAt: "desc" },
+  });
+  const periodStartValue = snapshotBefore?.totalValue ?? round.startBalance;
+
   const lessons = await getLessonsFromPreviousRounds();
 
   const analysis = await generateRoundAnalysis(
@@ -65,8 +72,9 @@ export async function createPeriodicAnalysis(roundId: number): Promise<void> {
         totalValue: s.totalValue,
         createdAt: s.createdAt,
       })),
-      startBalance: round.startBalance,
+      startBalance: periodStartValue,
       finalValue,
+      analysisType: "periodic",
     },
     lessons
   );
@@ -112,6 +120,7 @@ export async function createRoundAnalysis(roundId: number, type: string = "bust"
       })),
       startBalance: round.startBalance,
       finalValue,
+      analysisType: type as "bust" | "final",
     },
     lessons
   );

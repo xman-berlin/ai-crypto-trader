@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const roundId = searchParams.get("roundId");
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
-    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") ?? "10", 10)));
+    const pageSize = Math.min(10000, Math.max(1, parseInt(searchParams.get("pageSize") ?? "10", 10)));
 
     let targetRoundId: number;
 

@@ -20,7 +20,13 @@ export async function GET() {
     const marketData = await getMarketData(watchedCoins);
     const portfolio = await getPortfolioState(round.id, marketData);
 
-    return NextResponse.json(portfolio);
+    const snapshots = await prisma.snapshot.findMany({
+      where: { roundId: round.id },
+      orderBy: { createdAt: "asc" },
+      select: { totalValue: true, cash: true, createdAt: true },
+    });
+
+    return NextResponse.json({ ...portfolio, snapshots });
   } catch (e) {
     return NextResponse.json(
       { error: (e as Error).message },

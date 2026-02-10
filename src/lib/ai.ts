@@ -146,15 +146,22 @@ export async function generateRoundAnalysis(
     snapshots: { totalValue: number; createdAt: Date }[];
     startBalance: number;
     finalValue: number;
+    analysisType?: "periodic" | "bust" | "final";
   },
   lessons: string[]
 ): Promise<RoundAnalysis> {
-  const systemPrompt = `Du bist ein Trading-Analyst. Analysiere den Verlauf einer Krypto-Trading-Runde (Simulation).
-Erstelle eine umfassende Analyse.
+  const isPeriodic = roundData.analysisType === "periodic";
+  const periodLabel = isPeriodic ? "der letzten 24 Stunden" : "einer Krypto-Trading-Runde";
+  const summaryHint = isPeriodic
+    ? "Zusammenfassung der letzten 24h (2-3 Sätze, NICHT als Rundenende formulieren)"
+    : "Zusammenfassung der Runde (2-3 Sätze)";
+
+  const systemPrompt = `Du bist ein Trading-Analyst. Analysiere den Verlauf ${periodLabel} (Simulation).
+${isPeriodic ? "WICHTIG: Die Runde läuft noch! Dies ist eine Zwischenanalyse, KEIN Rundenende. Formuliere zukunftsgerichtet.\n" : ""}Erstelle eine umfassende Analyse.
 
 Antworte AUSSCHLIESSLICH mit validem JSON:
 {
-  "summary": "Zusammenfassung der Runde (2-3 Sätze)",
+  "summary": "${summaryHint}",
   "lessons": ["Lektion 1", "Lektion 2", ...],
   "mistakes": ["Fehler 1", "Fehler 2", ...],
   "strategies": ["Strategie 1", "Strategie 2", ...]
@@ -168,14 +175,17 @@ Antworte AUSSCHLIESSLICH mit validem JSON:
   ).length;
   const pnl = roundData.finalValue - roundData.startBalance;
 
-  const userPrompt = `## Rundenstatistik
-Startkapital: €${roundData.startBalance.toFixed(2)}
-Endwert: €${roundData.finalValue.toFixed(2)}
-P&L: €${pnl.toFixed(2)} (${((pnl / roundData.startBalance) * 100).toFixed(1)}%)
+  const headerLabel = isPeriodic ? "24h-Statistik" : "Rundenstatistik";
+  const startLabel = isPeriodic ? "Portfoliowert vor 24h" : "Startkapital";
+
+  const userPrompt = `## ${headerLabel}
+${startLabel}: €${roundData.startBalance.toFixed(2)}
+Aktueller Wert: €${roundData.finalValue.toFixed(2)}
+P&L (${isPeriodic ? "24h" : "gesamt"}): €${pnl.toFixed(2)} (${((pnl / roundData.startBalance) * 100).toFixed(1)}%)
 Trades: ${totalTrades} (${buys} Käufe, ${sells} Verkäufe)
 Win-Rate: ${sells > 0 ? ((profitableSells / sells) * 100).toFixed(0) : 0}%
 
-## Transaktionen
+## Transaktionen${isPeriodic ? " (letzte 24h)" : ""}
 ${roundData.transactions.map((t) => `- ${t.type.toUpperCase()} ${t.coinName}: €${t.total.toFixed(2)}${t.profit !== null ? ` (P&L: €${t.profit.toFixed(2)})` : ""} — ${t.reasoning}`).join("\n")}
 
 ${lessons.length > 0 ? `## Bisherige Lessons\n${lessons.join("\n")}` : ""}`;

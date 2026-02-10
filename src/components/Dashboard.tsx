@@ -10,6 +10,7 @@ import TraderStatus from "./TraderStatus";
 import TaxSummary from "./TaxSummary";
 import PnLChart from "./PnLChart";
 import RoundInfo from "./RoundInfo";
+import Accordion from "./Accordion";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -71,7 +72,7 @@ export default function Dashboard() {
   return (
     <div className="grid min-w-0 gap-6">
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 h-full">
           <PortfolioSummary portfolio={portfolio} />
         </div>
         <TraderStatus status={traderStatus ?? { isRunning: false, lastTick: null, nextTick: null, interval: 300000 }} onRefresh={handleRefresh} />
@@ -79,22 +80,33 @@ export default function Dashboard() {
 
       <HoldingsTable holdings={portfolio.holdings ?? []} />
 
-      <MarketTicker marketData={marketArray} />
-
       <div className="grid gap-6 lg:grid-cols-2">
-        <PnLChart snapshots={[]} startBalance={portfolio.totalValue ?? 1000} />
+        <PnLChart snapshots={portfolio.snapshots ?? []} startBalance={1000} />
         <TaxSummary transactions={allTxData?.transactions ?? []} />
       </div>
 
-      <TransactionLog
-        transactions={txData?.transactions ?? []}
-        page={txData?.page ?? 1}
-        totalPages={txData?.totalPages ?? 1}
-        total={txData?.total ?? 0}
-        onPageChange={setTxPage}
-      />
-
-      <RoundInfo rounds={Array.isArray(rounds) ? rounds : []} />
+      <Accordion items={[
+        {
+          title: `Markt (${marketArray.length})`,
+          content: <MarketTicker marketData={marketArray} />,
+        },
+        {
+          title: `Transaktionen (${txData?.total ?? 0})`,
+          content: (
+            <TransactionLog
+              transactions={txData?.transactions ?? []}
+              page={txData?.page ?? 1}
+              totalPages={txData?.totalPages ?? 1}
+              total={txData?.total ?? 0}
+              onPageChange={setTxPage}
+            />
+          ),
+        },
+        {
+          title: `Runden (${(Array.isArray(rounds) ? rounds : []).length})`,
+          content: <RoundInfo rounds={Array.isArray(rounds) ? rounds : []} />,
+        },
+      ]} />
     </div>
   );
 }

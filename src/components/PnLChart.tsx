@@ -32,11 +32,16 @@ export default function PnLChart({
     );
   }
 
+  const firstTime = new Date(snapshots[0].createdAt).getTime();
+  const lastTime = new Date(snapshots[snapshots.length - 1].createdAt).getTime();
+  const spanHours = (lastTime - firstTime) / (1000 * 60 * 60);
+
   const data = snapshots.map((s) => ({
-    time: new Date(s.createdAt).toLocaleTimeString("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
+    time: new Date(s.createdAt).toLocaleString("de-DE",
+      spanHours > 24
+        ? { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }
+        : { hour: "2-digit", minute: "2-digit" }
+    ),
     value: parseFloat(s.totalValue.toFixed(2)),
   }));
 
