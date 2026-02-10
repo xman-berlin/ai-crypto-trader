@@ -48,7 +48,7 @@ export default function TraderStatus({
   }
 
   return (
-    <div className="flex h-full flex-col rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-6">
+    <div className="flex h-full flex-col rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-4 sm:p-6">
       <h2 className="mb-3 text-lg font-semibold">KI-Trader</h2>
       <div className="flex items-center gap-3 text-sm">
         <div

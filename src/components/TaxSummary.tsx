@@ -20,25 +20,25 @@ export default function TaxSummary({
   const realizedLosses = sells.filter((t) => (t.profit ?? 0) < 0).reduce((sum, t) => sum + (t.profit ?? 0), 0);
 
   return (
-    <div className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-6">
-      <h2 className="mb-4 text-lg font-semibold">Steuern & Gebühren</h2>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+    <div className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-4 sm:p-6">
+      <h2 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold">Steuern & Gebühren</h2>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3">
         <div>
-          <p className="text-sm text-[var(--muted)]">Realisierte Gewinne</p>
-          <p className="text-lg font-bold text-[var(--green)]">
+          <p className="text-xs sm:text-sm text-[var(--muted)]">Realisierte Gewinne</p>
+          <p className="text-base sm:text-lg font-bold text-[var(--green)]">
             €{realizedGains.toFixed(2)}
           </p>
         </div>
         <div>
-          <p className="text-sm text-[var(--muted)]">Realisierte Verluste</p>
-          <p className="text-lg font-bold text-[var(--red)]">
+          <p className="text-xs sm:text-sm text-[var(--muted)]">Realisierte Verluste</p>
+          <p className="text-base sm:text-lg font-bold text-[var(--red)]">
             €{realizedLosses.toFixed(2)}
           </p>
         </div>
         <div>
-          <p className="text-sm text-[var(--muted)]">Netto P&L</p>
+          <p className="text-xs sm:text-sm text-[var(--muted)]">Netto P&L</p>
           <p
-            className={`text-lg font-bold ${
+            className={`text-base sm:text-lg font-bold ${
               totalProfit >= 0 ? "text-[var(--green)]" : "text-[var(--red)]"
             }`}
           >
@@ -46,12 +46,12 @@ export default function TaxSummary({
           </p>
         </div>
         <div>
-          <p className="text-sm text-[var(--muted)]">KESt (27,5%)</p>
-          <p className="text-lg font-bold">€{totalTax.toFixed(2)}</p>
+          <p className="text-xs sm:text-sm text-[var(--muted)]">KESt (27,5%)</p>
+          <p className="text-base sm:text-lg font-bold">€{totalTax.toFixed(2)}</p>
         </div>
         <div>
-          <p className="text-sm text-[var(--muted)]">Gebühren</p>
-          <p className="text-lg font-bold">€{totalFees.toFixed(2)}</p>
+          <p className="text-xs sm:text-sm text-[var(--muted)]">Gebühren</p>
+          <p className="text-base sm:text-lg font-bold">€{totalFees.toFixed(2)}</p>
         </div>
       </div>
     </div>

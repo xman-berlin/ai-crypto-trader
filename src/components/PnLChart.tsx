@@ -25,8 +25,8 @@ export default function PnLChart({
 }) {
   if (snapshots.length < 2) {
     return (
-      <div className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-6">
-        <h2 className="mb-4 text-lg font-semibold">Portfolio-Verlauf</h2>
+      <div className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-4 sm:p-6">
+        <h2 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold">Portfolio-Verlauf</h2>
         <p className="text-[var(--muted)]">Noch nicht genug Daten für den Chart</p>
       </div>
     );
@@ -46,14 +46,14 @@ export default function PnLChart({
   }));
 
   return (
-    <div className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-6">
-      <h2 className="mb-4 text-lg font-semibold">Portfolio-Verlauf</h2>
-      <ResponsiveContainer width="100%" height={250}>
+    <div className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-4 sm:p-6">
+      <h2 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold">Portfolio-Verlauf</h2>
+      <ResponsiveContainer width="100%" height={200}>
         <LineChart data={data}>
           <XAxis
             dataKey="time"
             stroke="var(--muted)"
-            tick={{ fontSize: 12 }}
+            tick={{ fontSize: 10 }}
           />
           <YAxis
             stroke="var(--muted)"

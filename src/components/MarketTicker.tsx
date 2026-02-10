@@ -24,7 +24,7 @@ export default function MarketTicker({
             )}
             <span className="text-sm font-medium">{coin.symbol.toUpperCase()}</span>
           </div>
-          <p className="mt-1 text-lg font-bold">€{coin.current_price.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="mt-1 text-base sm:text-lg font-bold">€{coin.current_price.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           <p
             className={`text-sm ${
               (coin.price_change_percentage_24h ?? 0) >= 0

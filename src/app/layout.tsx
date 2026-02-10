@@ -14,9 +14,9 @@ export default function RootLayout({
   return (
     <html lang="de" className="dark">
       <body className="min-h-screen antialiased">
-        <header className="border-b border-[var(--card-border)] px-6 py-4">
-          <div className="flex items-center gap-3">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="h-14 w-14">
+        <header className="border-b border-[var(--card-border)] px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="h-10 w-10 sm:h-14 sm:w-14">
               <rect width="512" height="512" rx="96" fill="#0a0a0a"/>
               <rect x="156" y="120" width="200" height="160" rx="32" fill="#3b82f6"/>
               <rect x="176" y="148" width="56" height="56" rx="12" fill="#0a0a0a"/>
@@ -36,7 +36,7 @@ export default function RootLayout({
             <h1 className="text-xl font-bold">AI Crypto Trader</h1>
           </div>
         </header>
-        <main className="mx-auto max-w-7xl overflow-hidden p-6">{children}</main>
+        <main className="mx-auto max-w-7xl overflow-hidden p-3 sm:p-6">{children}</main>
       </body>
     </html>
   );

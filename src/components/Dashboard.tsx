@@ -70,8 +70,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="grid min-w-0 gap-6">
-      <div className="grid gap-6 lg:grid-cols-3">
+    <div className="grid min-w-0 gap-4 sm:gap-6">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 h-full">
           <PortfolioSummary portfolio={portfolio} />
         </div>
@@ -80,7 +80,7 @@ export default function Dashboard() {
 
       <HoldingsTable holdings={portfolio.holdings ?? []} />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         <PnLChart snapshots={portfolio.snapshots ?? []} startBalance={1000} />
         <TaxSummary transactions={allTxData?.transactions ?? []} />
       </div>

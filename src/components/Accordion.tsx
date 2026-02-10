@@ -18,9 +18,9 @@ export default function Accordion({
             {idx > 0 && <div className="border-t border-[var(--card-border)]" />}
             <button
               onClick={() => setOpenIndex(isOpen ? null : idx)}
-              className="flex w-full cursor-pointer items-center justify-between px-6 py-4 text-left hover:bg-[var(--background)] transition-colors"
+              className="flex w-full cursor-pointer items-center justify-between px-4 py-3 sm:px-6 sm:py-4 text-left hover:bg-[var(--background)] transition-colors"
             >
-              <h2 className="text-lg font-semibold">{item.title}</h2>
+              <h2 className="text-base sm:text-lg font-semibold">{item.title}</h2>
               <span
                 className="text-[var(--muted)] transition-transform duration-200"
                 style={{ transform: isOpen ? "rotate(45deg)" : "rotate(0deg)" }}
@@ -33,7 +33,7 @@ export default function Accordion({
               style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
             >
               <div className="overflow-hidden">
-                <div className="px-6 pb-6">{item.content}</div>
+                <div className="px-4 pb-4 sm:px-6 sm:pb-6">{item.content}</div>
               </div>
             </div>
           </div>

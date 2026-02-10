@@ -62,7 +62,7 @@ export default async function RoundDetailPage({
   const badge = roundStatusBadge(round.status);
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-4 sm:gap-6">
       <Link
         href="/"
         className="text-sm text-[var(--accent)] hover:underline"
@@ -70,28 +70,28 @@ export default async function RoundDetailPage({
         &larr; Zurück zum Dashboard
       </Link>
 
-      <div className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-6">
+      <div className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-4 sm:p-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Runde #{round.id}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Runde #{round.id}</h1>
           <span
             className={`rounded px-3 py-1 text-sm font-bold ${badge.className}`}
           >
             {badge.label}
           </span>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
           <div>
-            <p className="text-sm text-[var(--muted)]">Startkapital</p>
-            <p className="text-lg font-bold">€{round.startBalance.toFixed(2)}</p>
+            <p className="text-xs sm:text-sm text-[var(--muted)]">Startkapital</p>
+            <p className="text-base sm:text-lg font-bold">€{round.startBalance.toFixed(2)}</p>
           </div>
           <div>
-            <p className="text-sm text-[var(--muted)]">Endwert</p>
-            <p className="text-lg font-bold">€{finalValue.toFixed(2)}</p>
+            <p className="text-xs sm:text-sm text-[var(--muted)]">Endwert</p>
+            <p className="text-base sm:text-lg font-bold">€{finalValue.toFixed(2)}</p>
           </div>
           <div>
-            <p className="text-sm text-[var(--muted)]">P&L</p>
+            <p className="text-xs sm:text-sm text-[var(--muted)]">P&L</p>
             <p
-              className={`text-lg font-bold ${
+              className={`text-base sm:text-lg font-bold ${
                 pnl >= 0 ? "text-[var(--green)]" : "text-[var(--red)]"
               }`}
             >
@@ -99,19 +99,19 @@ export default async function RoundDetailPage({
             </p>
           </div>
           <div>
-            <p className="text-sm text-[var(--muted)]">Trades</p>
-            <p className="text-lg font-bold">{round.transactions.length}</p>
+            <p className="text-xs sm:text-sm text-[var(--muted)]">Trades</p>
+            <p className="text-base sm:text-lg font-bold">{round.transactions.length}</p>
           </div>
         </div>
       </div>
 
       {analyses.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Analysen ({analyses.length})</h2>
+        <div className="space-y-3 sm:space-y-4">
+          <h2 className="text-base sm:text-lg font-semibold">Analysen ({analyses.length})</h2>
           {analyses.map((a, idx) => {
             const typeBadge = analysisTypeBadge(a.type);
             return (
-              <div key={idx} className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-6">
+              <div key={idx} className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-3">
                   <span className={`rounded px-2 py-0.5 text-xs font-bold ${typeBadge.className}`}>
                     {typeBadge.label}
@@ -160,8 +160,8 @@ export default async function RoundDetailPage({
         </div>
       )}
 
-      <div className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-6">
-        <h2 className="mb-4 text-lg font-semibold">Transaktionen</h2>
+      <div className="rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-4 sm:p-6">
+        <h2 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold">Transaktionen</h2>
         {round.transactions.length === 0 ? (
           <p className="text-[var(--muted)]">Keine Transaktionen</p>
         ) : (
