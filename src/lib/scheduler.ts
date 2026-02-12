@@ -6,7 +6,10 @@ let isRunning = false;
 let tickInterval = 300_000; // 5 minutes default
 
 export function startScheduler(interval?: number): void {
-  if (intervalId) return; // Already running
+  if (intervalId) {
+    console.log("Scheduler already running");
+    return; // Already running
+  }
 
   if (interval) tickInterval = interval;
   isRunning = true;
@@ -15,7 +18,7 @@ export function startScheduler(interval?: number): void {
   runTick();
 
   intervalId = setInterval(runTick, tickInterval);
-  console.log(`Scheduler started with ${tickInterval / 1000}s interval`);
+  console.log(`✓ Scheduler started with ${tickInterval / 1000}s interval`);
 }
 
 export function stopScheduler(): void {

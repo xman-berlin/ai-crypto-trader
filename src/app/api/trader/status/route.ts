@@ -22,7 +22,16 @@ export async function GET() {
     });
   }
 
+  // Auto-start scheduler in dev if not running (non-blocking)
   const schedulerStatus = getSchedulerStatus();
+  if (!schedulerStatus.isRunning) {
+    // Start scheduler asynchronously to avoid blocking the response
+    setTimeout(() => {
+      console.log("[AUTO-START] Starting scheduler");
+      startScheduler();
+    }, 100);
+  }
+
   return NextResponse.json({ ...schedulerStatus, lastTick });
 }
 
