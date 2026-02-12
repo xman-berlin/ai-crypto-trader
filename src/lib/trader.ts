@@ -13,6 +13,8 @@ const MIN_TRADE_EUR = 50;
 const BUST_THRESHOLD = 2; // €2
 const MAX_ROUND_HOURS = 72; // 3 Tage
 
+let tickRunning = false; // Lock to prevent concurrent ticks
+
 function log(step: string, detail?: string) {
   const ts = new Date().toLocaleTimeString("de-DE");
   console.log(`[${ts}] [TRADER] ${step}${detail ? ` — ${detail}` : ""}`);
@@ -23,6 +25,17 @@ export async function executeTick(): Promise<{
   message: string;
   actions: string[];
 }> {
+  // Prevent concurrent ticks
+  if (tickRunning) {
+    log("SKIP", "Tick already running, skipping");
+    return {
+      success: false,
+      message: "Tick bereits aktiv",
+      actions: ["skip: concurrent tick"],
+    };
+  }
+
+  tickRunning = true;
   const actions: string[] = [];
   const tickStart = Date.now();
 
@@ -271,13 +284,36 @@ export async function executeTick(): Promise<{
       log("ANALYSE", `24h-Analyse Fehler: ${(e as Error).message}`);
     }
 
-    // 11. Bust check — only if all holdings have real market prices
-    const holdingsWithMissingPrice = updatedPortfolio.holdings.filter(
-      (h) => !marketData.some((m) => m.id === h.coinId && m.current_price > 0)
-    );
-    if (holdingsWithMissingPrice.length > 0) {
-      log("BUST-CHECK", `Übersprungen — ${holdingsWithMissingPrice.length} Coin(s) ohne Marktpreis: ${holdingsWithMissingPrice.map((h) => h.coinName).join(", ")}`);
-    } else if (updatedPortfolio.totalValue < BUST_THRESHOLD) {
+    // 11. Time limit check (always check first, regardless of market data availability)
+    const roundAgeMs = Date.now() - round.createdAt.getTime();
+    const roundAgeHours = roundAgeMs / (1000 * 60 * 60);
+
+    if (roundAgeHours >= MAX_ROUND_HOURS) {
+      log("ZEITLIMIT", `Runde #${round.id} nach ${roundAgeHours.toFixed(0)}h abgelaufen`);
+      await prisma.round.update({
+        where: { id: round.id },
+        data: { status: "expired", endedAt: new Date() },
+      });
+      actions.push(`ZEITLIMIT! Runde nach ${roundAgeHours.toFixed(0)}h abgelaufen`);
+      try {
+        await createRoundAnalysis(round.id, "final");
+        actions.push("Finale Analyse erstellt");
+      } catch (e) {
+        log("ZEITLIMIT", `Analyse-Fehler: ${(e as Error).message}`);
+      }
+      const newRound = await prisma.round.create({ data: { startBalance: 1000 } });
+      actions.push(`Neue Runde #${newRound.id} gestartet`);
+      log("ZEITLIMIT", `Neue Runde #${newRound.id} gestartet`);
+    }
+    // 12. Bust check — only if all holdings have real market prices
+    else {
+      const holdingsWithMissingPrice = updatedPortfolio.holdings.filter(
+        (h) => !marketData.some((m) => m.id === h.coinId && m.current_price > 0)
+      );
+
+      if (holdingsWithMissingPrice.length > 0) {
+        log("BUST-CHECK", `Übersprungen — ${holdingsWithMissingPrice.length} Coin(s) ohne Marktpreis: ${holdingsWithMissingPrice.map((h) => h.coinName).join(", ")}`);
+      } else if (updatedPortfolio.totalValue < BUST_THRESHOLD) {
       log("BUST", `Gesamtwert €${updatedPortfolio.totalValue.toFixed(2)} < €${BUST_THRESHOLD}!`);
       await prisma.round.update({
         where: { id: round.id },
@@ -301,43 +337,23 @@ export async function executeTick(): Promise<{
       });
       actions.push(`Neue Runde #${newRound.id} gestartet`);
       log("BUST", `Neue Runde #${newRound.id} gestartet`);
-    } else if (updatedPortfolio.totalValue >= round.startBalance * 2) {
-      // 12. Verdopplung erreicht!
-      log("VERDOPPLUNG", `Ziel erreicht! €${updatedPortfolio.totalValue.toFixed(2)} >= €${(round.startBalance * 2).toFixed(2)}`);
-      await prisma.round.update({
-        where: { id: round.id },
-        data: { status: "completed", endedAt: new Date() },
-      });
-      actions.push(`VERDOPPLUNG! Gesamtwert: €${updatedPortfolio.totalValue.toFixed(2)}`);
-      try {
-        await createRoundAnalysis(round.id, "final");
-        actions.push("Finale Analyse erstellt");
-      } catch (e) {
-        log("VERDOPPLUNG", `Analyse-Fehler: ${(e as Error).message}`);
-      }
-      const newRound = await prisma.round.create({ data: { startBalance: 1000 } });
-      actions.push(`Neue Runde #${newRound.id} gestartet`);
-      log("VERDOPPLUNG", `Neue Runde #${newRound.id} gestartet`);
-    } else {
-      // 13. Rundenlimit prüfen (3 Tage)
-      const roundAgeMs = Date.now() - round.createdAt.getTime();
-      const roundAgeHours = roundAgeMs / (1000 * 60 * 60);
-      if (roundAgeHours >= MAX_ROUND_HOURS) {
-        log("ZEITLIMIT", `Runde #${round.id} nach ${roundAgeHours.toFixed(0)}h abgelaufen`);
+      } else if (updatedPortfolio.totalValue >= round.startBalance * 2) {
+        // 13. Verdopplung erreicht!
+        log("VERDOPPLUNG", `Ziel erreicht! €${updatedPortfolio.totalValue.toFixed(2)} >= €${(round.startBalance * 2).toFixed(2)}`);
         await prisma.round.update({
           where: { id: round.id },
-          data: { status: "expired", endedAt: new Date() },
+          data: { status: "completed", endedAt: new Date() },
         });
-        actions.push(`ZEITLIMIT! Runde nach ${roundAgeHours.toFixed(0)}h abgelaufen`);
+        actions.push(`VERDOPPLUNG! Gesamtwert: €${updatedPortfolio.totalValue.toFixed(2)}`);
         try {
           await createRoundAnalysis(round.id, "final");
           actions.push("Finale Analyse erstellt");
         } catch (e) {
-          log("ZEITLIMIT", `Analyse-Fehler: ${(e as Error).message}`);
+          log("VERDOPPLUNG", `Analyse-Fehler: ${(e as Error).message}`);
         }
         const newRound = await prisma.round.create({ data: { startBalance: 1000 } });
         actions.push(`Neue Runde #${newRound.id} gestartet`);
-        log("ZEITLIMIT", `Neue Runde #${newRound.id} gestartet`);
+        log("VERDOPPLUNG", `Neue Runde #${newRound.id} gestartet`);
       }
     }
 
@@ -357,6 +373,8 @@ export async function executeTick(): Promise<{
       message: `Tick fehlgeschlagen: ${(e as Error).message}`,
       actions,
     };
+  } finally {
+    tickRunning = false;
   }
 }
 
