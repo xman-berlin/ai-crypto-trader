@@ -70,7 +70,7 @@ npm run build            # Production build
 - `market/` — GET market data (cached)
 - `trader/run/` — POST trigger manual trade tick
 - `trader/status/` — GET scheduler status (last tick from DB snapshots)
-- `cron/trade/` — GET Vercel Cron trade tick (auth via CRON_SECRET)
+- `cron/trade/` — GET external cron trade tick (auth via CRON_SECRET)
 - `rounds/` — GET all rounds + analyses
 
 ## Deployment
@@ -78,7 +78,7 @@ npm run build            # Production build
 ### Production
 - **Hosting**: Vercel (auto-deploy from GitHub)
 - **Database**: Neon PostgreSQL (prod database)
-- **Scheduler**: Vercel Cron (every 5 min)
+- **Scheduler**: cron-job.org (external, every 5 min → `/api/cron/trade`)
 
 ### Local Development
 - **Database**: Neon PostgreSQL (dev database `cryptotrader_dev` — no Docker needed)
@@ -89,7 +89,7 @@ npm run build            # Production build
 ```
 OPENROUTER_API_KEY=   # Required for AI trading decisions
 DATABASE_URL=         # PostgreSQL connection string (Neon — dev and prod use separate databases)
-CRON_SECRET=          # Vercel Cron auth secret (production only)
+CRON_SECRET=          # External cron auth secret (cron-job.org, production only)
 TELEGRAM_BOT_TOKEN=   # Optional: Telegram notifications
 TELEGRAM_CHAT_ID=     # Optional: Telegram chat ID
 ```

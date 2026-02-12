@@ -25,7 +25,8 @@ AI-powered crypto trading simulator — an autonomous AI manages a play portfoli
 | Market Data | CoinGecko Free API, CoinPaprika (Fallback) |
 | Charts | Recharts |
 | Data Fetching | SWR (Client-side Polling) |
-| Hosting | Vercel (Cron-based Scheduler) |
+| Hosting | Vercel |
+| Scheduler | cron-job.org (every 5 min) |
 
 ## Architecture
 
@@ -94,13 +95,13 @@ npm run dev
 |----------|------------|:--------:|
 | `DATABASE_URL` | PostgreSQL connection string (Neon) | Yes |
 | `OPENROUTER_API_KEY` | API key for AI trading decisions | Yes |
-| `CRON_SECRET` | Vercel Cron auth (production only) | No |
+| `CRON_SECRET` | External cron auth (cron-job.org) | No |
 | `TELEGRAM_BOT_TOKEN` | Telegram notifications | No |
 | `TELEGRAM_CHAT_ID` | Telegram chat ID | No |
 
 ## Deployment
 
-The app is automatically deployed via Vercel. The trading loop runs in production via Vercel Cron (every 5 minutes).
+The app is automatically deployed via Vercel. The trading loop is triggered every 5 minutes by an external cron service ([cron-job.org](https://cron-job.org)) calling `/api/cron/trade`.
 
 ## License
 
