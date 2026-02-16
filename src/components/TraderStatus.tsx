@@ -80,14 +80,23 @@ export default function TraderStatus({
         >
           {loading ? "..." : status.isRunning ? "Stop" : "Start"}
         </button>
-        <button
-          onClick={triggerTick}
-          disabled={tickLoading}
-          className="rounded-md bg-[var(--accent)]/20 px-3 py-1.5 text-xs font-medium text-[var(--accent)] hover:bg-[var(--accent)]/30 disabled:opacity-50"
-        >
-          {tickLoading ? "Trading..." : "Manueller Trade"}
-        </button>
+        {/* Manual tick only in dev */}
+        {(!status.mode || status.mode !== "vercel-cron") && (
+          <button
+            onClick={triggerTick}
+            disabled={tickLoading}
+            className="rounded-md bg-[var(--accent)]/20 px-3 py-1.5 text-xs font-medium text-[var(--accent)] hover:bg-[var(--accent)]/30 disabled:opacity-50"
+          >
+            {tickLoading ? "Trading..." : "Manueller Trade"}
+          </button>
+        )}
       </div>
+
+      {status.mode === "vercel-cron" && (
+        <p className="mt-2 text-xs text-[var(--muted)]">
+          Cron-Job läuft alle 5 Min (cron-job.org)
+        </p>
+      )}
 
       {lastResult && !lastResult.success && lastResult.error && (
         <p className="mt-2 text-xs text-[var(--red)]">

@@ -40,6 +40,21 @@ export async function executeTick(): Promise<{
   const tickStart = Date.now();
 
   try {
+    // 0. Check if trading is enabled (via DB config)
+    const traderEnabledConfig = await prisma.config.findUnique({
+      where: { key: "traderEnabled" },
+    });
+    const traderEnabled = traderEnabledConfig?.value === "true";
+
+    if (!traderEnabled) {
+      log("SKIP", "Trader ist gestoppt (via DB config)");
+      return {
+        success: false,
+        message: "Trader ist gestoppt",
+        actions: ["skip: trader disabled"],
+      };
+    }
+
     // 1. Get active round
     log("Step 1/10", "Aktive Runde laden...");
     const round = await getActiveRound();

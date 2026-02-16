@@ -30,6 +30,12 @@ async function main() {
     },
   });
 
+  await prisma.config.upsert({
+    where: { key: "traderEnabled" },
+    update: {},
+    create: { key: "traderEnabled", value: "true" }, // Trader enabled by default
+  });
+
   // Create first round
   const existingRound = await prisma.round.findFirst({
     where: { status: "active" },
