@@ -3,6 +3,7 @@ import { getSchedulerStatus, startScheduler, stopScheduler } from "@/lib/schedul
 import { prisma } from "@/lib/db";
 
 const isVercel = !!process.env.VERCEL;
+let autoStartAttempted = false; // Only auto-start once
 
 export async function GET() {
   // Last tick always from DB (reliable across scheduler, manual ticks, and Vercel cron)
@@ -22,12 +23,13 @@ export async function GET() {
     });
   }
 
-  // Auto-start scheduler in dev if not running (non-blocking)
+  // Auto-start scheduler in dev only on first call (not on every poll)
   const schedulerStatus = getSchedulerStatus();
-  if (!schedulerStatus.isRunning) {
+  if (!schedulerStatus.isRunning && !autoStartAttempted) {
+    autoStartAttempted = true;
     // Start scheduler asynchronously to avoid blocking the response
     setTimeout(() => {
-      console.log("[AUTO-START] Starting scheduler");
+      console.log("[AUTO-START] Starting scheduler on first load");
       startScheduler();
     }, 100);
   }
@@ -47,9 +49,11 @@ export async function POST(request: Request) {
   const { action } = body;
 
   if (action === "start") {
+    autoStartAttempted = true; // Mark as manually started
     startScheduler();
     return NextResponse.json({ message: "Scheduler gestartet", ...getSchedulerStatus() });
   } else if (action === "stop") {
+    autoStartAttempted = true; // Prevent auto-restart after manual stop
     stopScheduler();
     return NextResponse.json({ message: "Scheduler gestoppt", ...getSchedulerStatus() });
   }
