@@ -110,6 +110,7 @@ export interface TraderStatus {
   lastTick: string | null;
   nextTick: string | null;
   interval: number;
+  mode?: string; // "vercel-cron" on production, undefined in dev
 }
 
 export interface AnalysisEntry {
